@@ -16,16 +16,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java version
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'microsoft'
 
-      - name: Build with Maven
-        run: mvn -f mountain-backend/pom.xml clean install
+      - name: Build with Maven (specific pom.xml path)
+        run: mvn -f mountain-backend/pom.xml clean package
 
-      - name: Upload build artifact
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
@@ -42,11 +42,10 @@ jobs:
       contents: read
 
     steps:
-      - name: Download artifact
+      - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: java-app
-          path: app
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -61,4 +60,4 @@ jobs:
         with:
           app-name: 'mountain-api-backend'
           slot-name: 'Production'
-          package: app/backend-0.0.1-SNAPSHOT.jar
+          package: backend-0.0.1-SNAPSHOT.jar
