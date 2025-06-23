@@ -13,8 +13,7 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -23,13 +22,14 @@ jobs:
           distribution: 'microsoft'
 
       - name: Build with Maven
-        run: mvn -f mountain-backend/pom.xml clean install
+        run: mvn clean install
+        working-directory: mountain-backend
 
-      - name: Upload artifact
+      - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: mountain-backend/target/backend-0.0.1-SNAPSHOT.jar
+          path: mountain-backend/target/*.jar
 
   deploy:
     runs-on: ubuntu-latest
@@ -42,20 +42,17 @@ jobs:
       contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: java-app
 
-      - name: List downloaded files (debug)
-        run: ls -R
-
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_457F176A978447B1B09CFA3F978BAEAA }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C9BD94C1A4D8427F9B2EE4B2DAD55B06 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_53F1007C18A14A7F8437365A6A1F0996 }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -63,4 +60,4 @@ jobs:
         with:
           app-name: 'mountain-api-backend'
           slot-name: 'Production'
-          package: backend-0.0.1-SNAPSHOT.jar
+          package: '*.jar'
