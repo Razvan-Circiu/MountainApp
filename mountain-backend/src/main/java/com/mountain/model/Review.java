@@ -1,6 +1,6 @@
 package com.mountain.model;
-
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 public class Review {
@@ -9,35 +9,33 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String user;
-
+    @Column(length = 2000)
     private String text;
 
-    private int rating;
+    private String imageUrl;
 
-    @ManyToOne
-    @JoinColumn(name = "trail_id")
-    private Trail trail;
+    private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "track_id")
+    private Track track;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     public Review() {}
 
-    public Review(String user, String text, int rating, Trail trail) {
-        this.user = user;
+    public Review(String text, String imageUrl, LocalDateTime createdAt, Track track, User user) {
         this.text = text;
-        this.rating = rating;
-        this.trail = trail;
+        this.imageUrl = imageUrl;
+        this.createdAt = createdAt;
+        this.track = track;
+        this.user = user;
     }
 
     public Long getId() {
         return id;
-    }
-
-    public String getUser() {
-        return user;
-    }
-
-    public void setUser(String user) {
-        this.user = user;
     }
 
     public String getText() {
@@ -48,19 +46,36 @@ public class Review {
         this.text = text;
     }
 
-    public int getRating() {
-        return rating;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setRating(int rating) {
-        this.rating = rating;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
-    public Trail getTrail() {
-        return trail;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setTrail(Trail trail) {
-        this.trail = trail;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Track getTrack() {
+        return track;
+    }
+
+    public void setTrack(Track track) {
+        this.track = track;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }
+

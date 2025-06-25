@@ -1,44 +1,27 @@
 package com.mountain.controller;
 
-import com.mountain.model.Review;
-import com.mountain.model.Trail;
-import com.mountain.repository.ReviewRepository;
-import com.mountain.repository.TrailRepository;
-import org.springframework.http.ResponseEntity;
+import com.exemplu.mountain.dto.ReviewDTO;
+import com.exemplu.mountain.service.ReviewService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/trails/{trailId}/reviews")
-@CrossOrigin
+@RequestMapping("/api/reviews")
+@CrossOrigin(origins = "*")
 public class ReviewController {
 
-    private final ReviewRepository reviewRepo;
-    private final TrailRepository trailRepo;
+    @Autowired
+    private ReviewService reviewService;
 
-    public ReviewController(ReviewRepository reviewRepo, TrailRepository trailRepo) {
-        this.reviewRepo = reviewRepo;
-        this.trailRepo = trailRepo;
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Review>> getReviews(@PathVariable Long trailId) {
-        return trailRepo.findById(trailId)
-                .map(trail -> ResponseEntity.ok(reviewRepo.findByTrail(trail)))
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping("/track/{trackId}")
+    public List<ReviewDTO> getReviewsByTrack(@PathVariable Long trackId) {
+        return reviewService.getReviewsByTrackId(trackId);
     }
 
     @PostMapping
-    public ResponseEntity<Review> addReview(
-            @PathVariable Long trailId,
-            @RequestBody Review reviewData) {
-
-        return trailRepo.findById(trailId)
-                .map(trail -> {
-                    reviewData.setTrail(trail);
-                    return ResponseEntity.ok(reviewRepo.save(reviewData));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ReviewDTO submitReview(@RequestBody ReviewDTO reviewDTO) {
+        return reviewService.addReview(reviewDTO);
     }
 }
