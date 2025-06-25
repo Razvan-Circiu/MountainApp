@@ -68,4 +68,24 @@ public class TrackController {
 
         gpxService.writeTrackAsGpx(trackOpt.get(), response);
     }
+
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadGpx(@RequestParam("file") MultipartFile file, Principal principal) {
+        try {
+            // Obține userul autentificat
+            User user = userRepository.findByEmail(principal.getName());
+
+            // Parsează fișierul GPX și creează obiectul Track
+            Track track = gpxService.parseGpx(file.getInputStream(), user);
+
+            // Salvează track-ul în baza de date
+            trackRepository.save(track);
+
+            return ResponseEntity.ok("Traseu încărcat cu succes.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Eroare la procesarea fișierului GPX: " + e.getMessage());
+        }
+    }
+
 }
