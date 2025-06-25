@@ -7,11 +7,12 @@ import com.mountain.model.User;
 import com.mountain.repository.TrackRepository;
 import com.mountain.repository.UserRepository;
 import com.mountain.service.GpxService;
+
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
@@ -39,32 +40,32 @@ public class TrackController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping("/{id}")
-    public TrackDTO getTrackById(@PathVariable Long id) {
-        Track track = trackRepository.findById(id).orElseThrow();
-        return TrackMapper.toDto(track);
-    }
-
-    @GetMapping("/me")
-    public List<TrackDTO> getUserTracks(Principal principal) {
-        User user = userRepository.findByEmail(principal.getName());
-        return trackRepository.findByUser(user)
-                .stream()
-                .map(TrackMapper::toDto)
-                .collect(Collectors.toList());
+    @GetMapping("/{trackId}")
+    public ResponseEntity<TrackDTO> getTrackById(@PathVariable Long trackId) {
+        Optional<Track> optionalTrack = trackRepository.findById(trackId);
+        return optionalTrack.map(track -> ResponseEntity.ok(TrackMapper.toDto(track)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public void uploadTrack(@RequestBody TrackDTO dto, Principal principal) {
+    public ResponseEntity<?> createTrack(@RequestBody TrackDTO dto, Principal principal) {
         User user = userRepository.findByEmail(principal.getName());
+
         Track track = TrackMapper.fromDto(dto);
         track.setUser(user);
-        trackRepository.save(track);
+
+        Track savedTrack = trackRepository.save(track);
+        return ResponseEntity.ok(TrackMapper.toDto(savedTrack));
     }
 
-    @GetMapping("/{id}/gpx")
-    public void downloadGpx(@PathVariable Long id, HttpServletResponse response) throws IOException {
-        Track track = trackRepository.findById(id).orElseThrow();
-        gpxService.writeTrackAsGpx(track, response);
+    @GetMapping("/{trackId}/download")
+    public void downloadTrack(@PathVariable Long trackId, HttpServletResponse response) {
+        Optional<Track> trackOpt = trackRepository.findById(trackId);
+        if (trackOpt.isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        gpxService.writeTrackAsGpx(trackOpt.get(), response);
     }
 }
