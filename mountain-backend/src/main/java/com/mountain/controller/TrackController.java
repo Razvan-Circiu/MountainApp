@@ -1,12 +1,19 @@
 package com.mountain.controller;
 
+import com.mountain.dto.TrackDTO;
+import com.mountain.dto.TrackPointDTO;
+import com.mountain.mapper.TrackPointMapper;
 import com.mountain.model.Track;
 import com.mountain.model.TrackPoint;
+import com.mountain.model.User;
 import com.mountain.repository.TrackRepository;
+import com.mountain.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -14,101 +21,49 @@ import java.util.List;
 @CrossOrigin
 public class TrackController {
 
-    private final TrackRepository trackRepository;
+    @Autowired
+    private TrackRepository trackRepository;
 
-    public TrackController(TrackRepository trackRepository) {
-        this.trackRepository = trackRepository;
-    }
+    @Autowired
+    private UserRepository userRepository;
 
-    @PostMapping
-    public ResponseEntity<?> saveTrack(@RequestBody TrackRequest request, Authentication auth) {
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadTrack(@RequestBody TrackDTO trackDto, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName());
+
         Track track = new Track();
-        track.setName(request.getName());
-        track.setUsername(auth.getName()); // username extras din token JWT
+        track.setName(trackDto.getName());
+        track.setDescription(trackDto.getDescription());
+        track.setUser(user);
 
-        List<TrackPoint> trackPoints = request.getPoints().stream().map(p -> {
-            TrackPoint tp = new TrackPoint();
-            tp.setLatitude(p.getLatitude());
-            tp.setLongitude(p.getLongitude());
-            tp.setTimestamp(p.getTimestamp());
-            return tp;
-        }).toList();
+        List<TrackPoint> trackPoints = new ArrayList<>();
+        for (TrackPointDTO dto : trackDto.getTrackPoints()) {
+            TrackPoint point = TrackPointMapper.toEntity(dto);
+            point.setTrack(track);
+            trackPoints.add(point);
+        }
 
         track.setPoints(trackPoints);
         trackRepository.save(track);
 
-        return ResponseEntity.ok("Traseu salvat cu succes.");
+        return ResponseEntity.ok("Traseu încărcat cu succes");
     }
 
     @GetMapping
-    public ResponseEntity<List<Track>> getTracks(Authentication auth) {
-        List<Track> tracks = trackRepository.findByUsername(auth.getName());
-        return ResponseEntity.ok(tracks);
+    public List<Track> getAllTracks() {
+        return trackRepository.findAll();
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteTrack(@PathVariable Long id, Authentication auth) {
+    @GetMapping("/{id}")
+    public ResponseEntity<Track> getTrackById(@PathVariable Long id) {
         return trackRepository.findById(id)
-                .map(track -> {
-                    if (!track.getUsername().equals(auth.getName())) {
-                        return ResponseEntity.status(403).body("Acces interzis.");
-                    }
-                    trackRepository.delete(track);
-                    return ResponseEntity.ok("Traseu șters.");
-                })
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-
-    // DTO intern pentru request
-    public static class TrackRequest {
-        private String name;
-        private List<TrackPointDTO> points;
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public List<TrackPointDTO> getPoints() {
-            return points;
-        }
-
-        public void setPoints(List<TrackPointDTO> points) {
-            this.points = points;
-        }
-
-        public static class TrackPointDTO {
-            private double latitude;
-            private double longitude;
-            private long timestamp;
-
-            public double getLatitude() {
-                return latitude;
-            }
-
-            public void setLatitude(double latitude) {
-                this.latitude = latitude;
-            }
-
-            public double getLongitude() {
-                return longitude;
-            }
-
-            public void setLongitude(double longitude) {
-                this.longitude = longitude;
-            }
-
-            public long getTimestamp() {
-                return timestamp;
-            }
-
-            public void setTimestamp(long timestamp) {
-                this.timestamp = timestamp;
-            }
-        }
+    @GetMapping("/my")
+    public List<Track> getUserTracks(Principal principal) {
+        User user = userRepository.findByEmail(principal.getName());
+        return trackRepository.findByUser(user);
     }
 }
