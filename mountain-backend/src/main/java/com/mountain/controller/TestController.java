@@ -8,6 +8,8 @@ public class TestController {
 
     @GetMapping("/api/test")
     public String testConnection() {
+
+        System.out.println("✅ /api/test HIT");
         return "Backend is running!";
     }
 }
