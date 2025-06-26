@@ -20,7 +20,7 @@ public class SecurityConfig {
                 .cors()  // Enable CORS
                 .and()
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/success", "/api/failure").permitAll()
+                        .requestMatchers("/api/success", "/api/failure", "api/test").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
